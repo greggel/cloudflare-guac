@@ -1,8 +1,8 @@
-version: "3"
+version: "3.7"
 services:
   guacamole:
-    build: .
-    #image: flcontainers/guacamole
+    #build: .
+    image: greggel/cloudflare-guac:latest
     container_name: guacamole
     environment:
       TZ: 'UTC'
