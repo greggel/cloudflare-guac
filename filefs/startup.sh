@@ -1,5 +1,9 @@
 #!/bin/sh
 
+if [ -f .env ]; then
+  source .env
+fi
+
 echo "Running startup scripts"
 /usr/local/bin/_startup.sh
 
@@ -18,25 +22,35 @@ while ! nc -z localhost 5432; do
   sleep 5
 done
 /etc/init.d/tomcat start
-/usr/local/bin/cloudflared tunnel run guacamole
 
-# Start the cloudflare tunnel but after you check if cloudflared is already running
-if ! pgrep -x "cloudflared" > /dev/null; then
+# Check if cloudflared is running
+if pgrep -x "cloudflared" > /dev/null; then
+  echo "cloudflared is already running."
+  exit 0
+fi
+
+# Check if cert.pem exists in /root/.cloudflared
+if [ -f "/root/.cloudflared/cert.pem" ]; then
+  echo "cert.pem found. Starting cloudflared..."
+  echo "Using $hostname as Cloudflare team name"
+
+  # Start the tunnel
+  /usr/local/bin/cloudflared tunnel run $hostname
+else
   echo "Starting cloudflared..."
-  
-  # initiate Cloudflare login and authorize
+  echo "Using $hostname as Cloudflare team name"
+
+  # Initiate Cloudflare login and authorize
   /usr/local/bin/cloudflared tunnel login
 
   # Create the tunnel and add the DNS
-  /usr/local/bin/cloudflared tunnel create guacamole
+  /usr/local/bin/cloudflared tunnel create $hostname
 
   # Add the DNS route
-  /usr/local/bin/cloudflared tunnel route dns guacamole guacamole
+  /usr/local/bin/cloudflared tunnel route dns $hostname $hostname
 
-  # start tunnel
-  /usr/local/bin/cloudflared tunnel run guacamole
-else
-  echo "cloudflared is already running."
+  # Start the tunnel
+  /usr/local/bin/cloudflared tunnel run $hostname
 fi
 
 # Add any other startup commands or services you might need
