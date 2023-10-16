@@ -15,7 +15,10 @@ services:
       - type: bind
         source: ./filefs/startup.sh
         target: /startup.sh
-    entrypoint: bash /startup.sh
+      - type: bind
+        source: ./config.yml
+        target: /root/.cloudflared/config.yml
+    entrypoint: bash -c "/startup.sh"
     ports:
       - 8080:8080
 volumes:
